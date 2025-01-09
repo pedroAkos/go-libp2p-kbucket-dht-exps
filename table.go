@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -534,6 +535,21 @@ func (rt *RoutingTable) Print() {
 		for e := b.list.Front(); e != nil; e = e.Next() {
 			p := e.Value.(*PeerInfo).Id
 			fmt.Printf("\t\t- %s %s\n", p.String(), rt.metrics.LatencyEWMA(p).String())
+		}
+	}
+	rt.tabLock.RUnlock()
+}
+
+func (rt *RoutingTable) PrintTo(out *os.File) {
+	fmt.Fprintf(out, "Routing Table, bs = %d, Max latency = %d\n", rt.bucketsize, rt.maxLatency)
+	rt.tabLock.RLock()
+
+	for i, b := range rt.buckets {
+		fmt.Fprintf(out, "\tbucket: %d\n", i)
+
+		for e := b.list.Front(); e != nil; e = e.Next() {
+			p := e.Value.(*PeerInfo).Id
+			fmt.Fprintf(out, "\t\t- %s %s\n", p.String(), rt.metrics.LatencyEWMA(p).String())
 		}
 	}
 	rt.tabLock.RUnlock()
